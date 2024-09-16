@@ -5,25 +5,27 @@
  * @format
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import type {PropsWithChildren} from 'react';
 import {
+  Button,
+  FlatList,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   useColorScheme,
   View,
 } from 'react-native';
 
 import {
   Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
+
+import NewHeader from './components/Header';
 
 type SectionProps = PropsWithChildren<{
   title: string;
@@ -57,6 +59,51 @@ function Section({children, title}: SectionProps): React.JSX.Element {
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+  const [users, setUsers] = useState([]);
+  const [name, setName] = useState('');
+  const [userType, setUserType] = useState('');
+  const [email, setEmail] = useState('');
+  const [discipline, setDiscipline] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  // Fetch users from the API when the component loads
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Function to fetch users from the API
+  const fetchUsers = async () => {
+    setError('');
+    try {
+      setLoading(true);
+      const response = await axios.get('http://192.168.1.121:5000/api/users');
+      setUsers(response.data);
+      setLoading(false);
+    } catch (err) {
+      setLoading(false);
+      setError('Error fetching users');
+      console.error(err);
+    }
+  };
+  // Function to create a new user
+  const handleCreateUser = async () => {
+    setError('');
+    try {
+      setLoading(true);
+      const newUser = { name, userType, email, discipline };
+      await axios.post('http://192.168.1.121:5000/api/users', newUser);
+      setName('');
+      setUserType('');
+      setEmail('');
+      setDiscipline('');
+      fetchUsers(); // Refresh user list after adding a new user
+      setLoading(false);
+    } catch (err) {
+      setLoading(false);
+      setError('Error creating user');
+      console.error(err);
+    }
+  };
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
@@ -71,25 +118,76 @@ function App(): React.JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={backgroundStyle}>
-        <Header />
+        <NewHeader />
         <View
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
           }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
+          <Section title="">
+            {/* Display error message if any */}
+            {error && <Text style={styles.errorMessage}>{error}</Text>}
+
+            {/* Loading indicator */}
+            {loading && <Text>Loading...</Text>}
           </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
+          <Section title="User Management">
+            {/* Form to create a new user */}
+            <View>
+              <View>
+                <Text style={styles.label}>Name:</Text>
+                <TextInput
+                  value={name}
+                  onChangeText={(e: any) => setName(e)}
+                />
+              </View>
+              <View>
+                <Text style={styles.label}>Type:</Text>
+                <TextInput
+                  value={userType}
+                  onChangeText={(e: any) => setUserType(e)}
+                />
+              </View>
+              <View>
+                <Text style={styles.label}>Email:</Text>
+                <TextInput
+                  value={email}
+                  onChangeText={(e: any) => setEmail(e)}
+                />
+              </View>
+              <View>
+                <Text style={styles.label}>Discipline:</Text>
+                <TextInput
+                  value={discipline}
+                  onChangeText={(e: any) => setDiscipline(e)}
+                />
+              </View>
+              <Button title="Create User" onPress={handleCreateUser}/>
+            </View>
           </Section>
-          <Section title="Debug">
-            <DebugInstructions />
+          <Section title="List of Providers">
+            <FlatList
+              data={users.filter((user: any) => user.userType === 'Provider')}
+              keyExtractor={(item: any) => item.id}
+              renderItem={({ item }) => (
+                <View style={styles.itemContainer}>
+                  <Text style={styles.list}>{item.name} ({item.email})</Text>
+                  {item.discipline && <Text style={styles.list}>{item.discipline}</Text>}
+                </View>
+              )}
+             />
           </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
+          <Section title="List of Consumers">
+            <FlatList
+              data={users.filter((user: any) => user.userType === 'Consumer')}
+              keyExtractor={(item: any) => item.id}
+              renderItem={({ item }) => (
+                <View style={styles.itemContainer}>
+                  <Text style={styles.list}>{item.name} ({item.email})</Text>
+                  {item.discipline && <Text style={styles.list}>{item.discipline}</Text>}
+                </View>
+              )}
+             />
           </Section>
-          <LearnMoreLinks />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -110,8 +208,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '400',
   },
+  label: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
   highlight: {
     fontWeight: '700',
+  },
+  list: {
+    fontSize: 14,
+    color: 'gray',
+  },itemContainer: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  errorMessage: {
+    color: 'red',
   },
 });
 
