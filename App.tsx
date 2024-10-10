@@ -76,12 +76,12 @@ function App(): React.JSX.Element {
     setError('');
     try {
       setLoading(true);
-      const response = await axios.get('http://192.168.1.121:5000/api/users');
+      const response = await axios.get('https://fyt-api-leo-neves-projects-1eeb8370.vercel.app/api/users');
       setUsers(response.data);
       setLoading(false);
     } catch (err) {
       setLoading(false);
-      setError('Error fetching users');
+      setError('Error fetching users' + err);
       console.error(err);
     }
   };
@@ -91,7 +91,7 @@ function App(): React.JSX.Element {
     try {
       setLoading(true);
       const newUser = { name, userType, email, discipline };
-      await axios.post('http://192.168.1.121:5000/api/users', newUser);
+      await axios.post('https://fyt-api-leo-neves-projects-1eeb8370.vercel.app/api/users', newUser);
       setName('');
       setUserType('');
       setEmail('');
